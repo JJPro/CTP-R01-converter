@@ -67,7 +67,7 @@ const aqara_opple = {
 
     return {
       ...xiaomi.numericAttributes2Payload(msg, meta, model, options, msg.data),
-      operation_mode,
+      // operation_mode,
       action: 'side_up',
       side_up: msg.data['329'],
     };
@@ -99,6 +99,25 @@ const action_multistate = {
   },
 };
 
+const manufacturerOptions = { manufacturerCode: 0x115f };
+
+const operation_mode = {
+  key: ['operation_mode'],
+  convertSet: async (entity, key, value, meta) => {
+    console.log('>>>>', value);
+    const lookup = { 'action mode': 0, 'scene mode': 1 };
+
+    await entity.write(
+      'aqaraOpple',
+      { 328: { value: lookup[value], type: 0x20 } },
+      manufacturerOptions
+    );
+  },
+  convertGet: async (entity, key, meta) => {
+    await entity.read('aqaraOpple', [328], manufacturerOptions);
+  },
+};
+
 const definition = {
   zigbeeModel: ['lumi.remote.cagl02'],
   model: 'CTP-R01',
@@ -106,7 +125,7 @@ const definition = {
   description: 'Aqara cube T1 Pro',
   meta: { battery: { voltageToPercentage: '3V_2850_3000' } },
   fromZigbee: [aqara_opple, action_multistate, fz.MFKZQ01LM_action_analog],
-  toZigbee: [],
+  toZigbee: [operation_mode],
   exposes: [
     /* Device Info */
     e.battery(),
@@ -114,7 +133,7 @@ const definition = {
     e.device_temperature(),
     e.power_outage_count(false),
     exposes
-      .enum('operation_mode', ea.STATE, ['scene mode', 'action mode'])
+      .enum('operation_mode', ea.ALL, ['scene mode', 'action mode'])
       .withDescription(
         'Press LINK button 5 times to toggle between action mode and scene mode'
       ),
