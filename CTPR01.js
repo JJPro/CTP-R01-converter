@@ -40,36 +40,48 @@
 const fz = require('zigbee-herdsman-converters/converters/fromZigbee');
 const exposes = require('zigbee-herdsman-converters/lib/exposes');
 const xiaomi = require('zigbee-herdsman-converters/lib/xiaomi');
+const herdsman = require('zigbee-herdsman');
 const e = exposes.presets;
 const ea = exposes.access;
 
-const OPS_MODE = {
-  ACTION: 0,
-  SCENE: 1,
+/**
+ * data types: 
+ *  boolean: 0x10
+ *  byte: 0x08 (FF)
+ *  unsigned byte integer: 0x20 (FF)
+ */
+
+const manufacturerOptions = {
+  xiaomi: {
+    manufacturerCode: herdsman.Zcl.ManufacturerCode.LUMI_UNITED_TECH,
+    disableDefaultResponse: true,
+  },
 };
-const ops_mode_lookup = { 0: 'action mode', 1: 'scene mode' };
+
+const ops_mode_key = 0x0148;
+
+const ops_mode_lookup = { 0: 'action_mode', 1: 'scene_mode' };
 
 const aqara_opple = {
   cluster: 'aqaraOpple',
   type: ['attributeReport', 'readResponse'],
   options: (definition) => [
     ...xiaomi.numericAttributes2Options(definition),
-    exposes.enum('operation_mode', ea.STATE, ['scene mode', 'action mode']),
+    exposes.enum('operation_mode', ea.ALL, ['scene_mode', 'action_mode']),
   ],
   convert: (model, msg, publish, options, meta) => {
-    // console.log('>>>> ops mode', meta.state.operationMode);
-    if (msg.data.hasOwnProperty('155') || msg.data.hasOwnProperty('328')) {
-      const ops_mode = msg.data['155'] || msg.data['328'];
-      meta.state.operationMode = ops_mode;
+    if (msg.data.hasOwnProperty('328') || msg.data.hasOwnProperty('155')) {
+      meta.state.operation_mode = ops_mode_lookup[msg.data[328] || msg.data[155]];
     }
-
-    const operation_mode = ops_mode_lookup[meta.state.operationMode];
+    // if (msg.data.hasOwnProperty('328')) {
+    //   meta.state.operation_mode = ops_mode_lookup[msg.data[328]];
+    // }
 
     return {
       ...xiaomi.numericAttributes2Payload(msg, meta, model, options, msg.data),
-      // operation_mode,
+      operation_mode: meta.state.operation_mode,
       action: 'side_up',
-      side_up: msg.data['329'],
+      side_up: msg.data['329'] + 1,
     };
   },
 };
@@ -77,7 +89,9 @@ const aqara_opple = {
 const action_multistate = {
   ...fz.MFKZQ01LM_action_multistate,
   convert: (model, msg, publish, options, meta) => {
-    if (meta.state.operationMode === OPS_MODE.ACTION) {
+    console.log('>>>> fz >> action_multistate >> meta.state.operation_mode', meta.state.operation_mode);
+    console.log('>>>> msg.data', msg.data);
+    if (meta.state.operation_mode === 'action_mode') {
       return fz.MFKZQ01LM_action_multistate.convert(
         model,
         msg,
@@ -92,37 +106,43 @@ const action_multistate = {
       else if (value === 2) scene_action_multistate = { action: 'wakeup' };
       else if (value === 4) scene_action_multistate = { action: 'hold' };
       else if (value >= 1024)
-        scene_action_multistate = { action: 'side_up', side_up: value - 1024 };
+        scene_action_multistate = { action: 'side_up', side_up: value - 1023 };
 
       return scene_action_multistate;
     }
   },
 };
 
-const manufacturerOptions = { manufacturerCode: 0x115f };
-
 const operation_mode = {
   key: ['operation_mode'],
   convertSet: async (entity, key, value, meta) => {
-    console.log('>>>>', value);
-    const lookup = { 'action mode': 0, 'scene mode': 1 };
-
+    const lookup = { action_mode: 0, scene_mode: 1 };
+    console.log('>>>> convertSet()');
     await entity.write(
       'aqaraOpple',
-      { 328: { value: lookup[value], type: 0x20 } },
-      manufacturerOptions
+      { [ops_mode_key]: { value: lookup[value], type: 0x20 } },
+      manufacturerOptions.xiaomi
     );
+    console.log('>>> setting ops_mode success');
+    return { state: { operation_mode: value } };
   },
   convertGet: async (entity, key, meta) => {
-    await entity.read('aqaraOpple', [328], manufacturerOptions);
+    console.log('>>>> convertGet()');
+    const data = await entity.read(
+      'aqaraOpple',
+      [ops_mode_key],
+      manufacturerOptions.xiaomi
+    );
+    console.log('>>>> convert read data', data);
+    return {state: {operation_mode: ops_mode_lookup[data[328]]}};
   },
 };
 
 const definition = {
   zigbeeModel: ['lumi.remote.cagl02'],
   model: 'CTP-R01',
-  vendor: 'Lumi',
-  description: 'Aqara cube T1 Pro',
+  vendor: 'Xiaomi',
+  description: 'Aqara magic cube T1 Pro',
   meta: { battery: { voltageToPercentage: '3V_2850_3000' } },
   fromZigbee: [aqara_opple, action_multistate, fz.MFKZQ01LM_action_analog],
   toZigbee: [operation_mode],
@@ -133,9 +153,9 @@ const definition = {
     e.device_temperature(),
     e.power_outage_count(false),
     exposes
-      .enum('operation_mode', ea.ALL, ['scene mode', 'action mode'])
+      .enum('operation_mode', ea.ALL, ['scene_mode', 'action_mode'])
       .withDescription(
-        'Press LINK button 5 times to toggle between action mode and scene mode'
+        'Press LINK button 5 times to toggle between action_mode and scene_mode'
       ),
     /* Actions */
     e.angle('action_angle'),
@@ -158,6 +178,30 @@ const definition = {
       'rotate_right',
     ]),
   ],
+  /**
+   * 
+   * @param {Device} device device.d.ts
+   * @param {*} coordinatorEndpoint 
+   * @param {*} logger 
+   */
+  configure: async (device, coordinatorEndpoint, logger) => {
+    console.log('>>>> configure()');
+    const endpoint = device.getEndpoint(1);
+    // await endpoint.read('aqaraOpple', [ops_mode_key], {
+    //   manufacturerCode: 0x115f,
+    // });
+    console.log('>>>> \t write to aqaraOpple.operation_mode data point');
+    await endpoint.write(
+      'aqaraOpple',
+      { [ops_mode_key]: { value: 0, type: 0x20 } },
+      manufacturerOptions.xiaomi
+    );
+    console.log('>>>> device', device);
+    // device.meta.state = {
+    //   operation_mode: ops_mode_lookup[0],
+    // };
+    // return { state: { operation_mode: ops_mode_lookup[0] } };
+  },
 };
 
 module.exports = definition;
