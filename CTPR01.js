@@ -70,6 +70,7 @@ const aqara_opple = {
     exposes.enum('operation_mode', ea.ALL, ['scene_mode', 'action_mode']),
   ],
   convert: (model, msg, publish, options, meta) => {
+    // let ops_mode;
     if (msg.data.hasOwnProperty('328') || msg.data.hasOwnProperty('155')) {
       meta.state.operation_mode = ops_mode_lookup[msg.data[328] || msg.data[155]];
     }
@@ -79,7 +80,7 @@ const aqara_opple = {
 
     return {
       ...xiaomi.numericAttributes2Payload(msg, meta, model, options, msg.data),
-      operation_mode: meta.state.operation_mode,
+      // operation_mode: ops_mode,
       action: 'side_up',
       side_up: msg.data['329'] + 1,
     };
@@ -89,8 +90,13 @@ const aqara_opple = {
 const action_multistate = {
   ...fz.MFKZQ01LM_action_multistate,
   convert: (model, msg, publish, options, meta) => {
-    console.log('>>>> fz >> action_multistate >> meta.state.operation_mode', meta.state.operation_mode);
-    console.log('>>>> msg.data', msg.data);
+    // console.debug('>>>> fz >> action_multistate >> meta', meta);
+    console.log('>>>> fz >> action_multistate >> meta.state', meta.state);
+    // console.log(
+    //   '>>>> fz >> action_multistate >> meta.operation_mode',
+    //   meta.operation_mode
+    // );
+    // console.debug('>>>> msg.data', msg.data);
     if (meta.state.operation_mode === 'action_mode') {
       return fz.MFKZQ01LM_action_multistate.convert(
         model,
@@ -187,19 +193,24 @@ const definition = {
   configure: async (device, coordinatorEndpoint, logger) => {
     console.log('>>>> configure()');
     const endpoint = device.getEndpoint(1);
-    // await endpoint.read('aqaraOpple', [ops_mode_key], {
-    //   manufacturerCode: 0x115f,
-    // });
-    console.log('>>>> \t write to aqaraOpple.operation_mode data point');
-    await endpoint.write(
-      'aqaraOpple',
-      { [ops_mode_key]: { value: 0, type: 0x20 } },
-      manufacturerOptions.xiaomi
-    );
-    console.log('>>>> device', device);
-    // device.meta.state = {
-    //   operation_mode: ops_mode_lookup[0],
-    // };
+    const data = await endpoint.read('aqaraOpple', [ops_mode_key], {
+      manufacturerCode: 0x115f,
+    });
+
+    const operation_mode = data[ops_mode_key];
+
+    console.log('>>>> 初始化是ops_mode', operation_mode);
+    if (!operation_mode || operation_mode == 0xff) {
+      await endpoint.write(
+        'aqaraOpple',
+        { [ops_mode_key]: { value: 0, type: 0x20 } },
+        manufacturerOptions.xiaomi
+      );
+    }
+    // console.log('>>>> \t write to aqaraOpple.operation_mode data point');
+    // console.log('>>>> device', device);
+    // device.meta.operation_mode = ops_mode_lookup[0];
+    // device.save();
     // return { state: { operation_mode: ops_mode_lookup[0] } };
   },
 };
