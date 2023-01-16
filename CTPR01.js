@@ -41,6 +41,7 @@ const fz = require('zigbee-herdsman-converters/converters/fromZigbee');
 const exposes = require('zigbee-herdsman-converters/lib/exposes');
 const xiaomi = require('zigbee-herdsman-converters/lib/xiaomi');
 const herdsman = require('zigbee-herdsman');
+const globalStore = require('zigbee-herdsman-converters/lib/store');
 const ota = require('zigbee-herdsman-converters/lib/ota');
 
 const e = exposes.presets;
@@ -57,6 +58,12 @@ const op_mode_attr = 0x0148;
 const op_mode_lookup = { 0: 'action_mode', 1: 'scene_mode' };
 const op_mode_reverse_lookup = { action_mode: 0, scene_mode: 1 };
 
+const one_min_inactivity_handler = (meta, publish) => {
+  clearTimeout(globalStore.getValue(meta.device, 'inactivityTimer'));
+  const inactivityTimer = setTimeout(() => publish({ action: '1_min_inactivity' }), 1000 * 60);
+  globalStore.putValue(meta.device, 'inactivityTimer', inactivityTimer);
+}
+
 const aqara_opple = {
   cluster: 'aqaraOpple',
   type: ['attributeReport', 'readResponse'],
@@ -65,20 +72,13 @@ const aqara_opple = {
     exposes.enum('operation_mode', ea.SET, ['scene_mode', 'action_mode']),
   ],
   convert: async (model, msg, publish, options, meta) => {
-    console.debug('>>> fq.aqaraOpple >> convert()');
-    const payload = xiaomi.numericAttributes2Payload(
-      msg,
-      meta,
-      model,
-      options,
-      msg.data
-    );
+    const payload = xiaomi.numericAttributes2Payload(msg, meta, model, options, msg.data);
 
     // basic data reading (contains operation_mode at attribute 155)
     if (msg.data.hasOwnProperty(247)) {
       // execute soft switch of operation_mode
       if (meta.state.mode_switching_scheduler) {
-        const {callback, new_mode} = meta.state.mode_switching_scheduler;
+        const { callback, new_mode } = meta.state.mode_switching_scheduler;
         await callback();
         payload.operation_mode = new_mode;
         payload.mode_switching_scheduler = null;
@@ -99,6 +99,8 @@ const aqara_opple = {
     else if (msg.data.hasOwnProperty(329)) {
       payload.action = 'side_up';
       payload.side_up = msg.data[329] + 1;
+
+      one_min_inactivity_handler(meta, publish);
     }
 
     return payload;
@@ -108,14 +110,9 @@ const aqara_opple = {
 const action_multistate = {
   ...fz.MFKZQ01LM_action_multistate,
   convert: (model, msg, publish, options, meta) => {
+    one_min_inactivity_handler(meta, publish);
     if (meta.state.operation_mode === 'action_mode') {
-      return fz.MFKZQ01LM_action_multistate.convert(
-        model,
-        msg,
-        publish,
-        options,
-        meta
-      );
+      return fz.MFKZQ01LM_action_multistate.convert(model, msg, publish, options, meta);
     } else {
       const value = msg.data['presentValue'];
       let scene_action_multistate;
@@ -129,6 +126,14 @@ const action_multistate = {
     }
   },
 };
+
+const analog_action = {
+  ...fz.MFKZQ01LM_action_analog,
+  convert: (model, msg, publish, options, meta) => {
+    one_min_inactivity_handler(meta, publish);
+    return fz.MFKZQ01LM_action_analog.convert(model, msg, publish, options, meta);
+  }
+}
 
 const operation_mode_switch = {
   key: ['operation_mode'],
@@ -168,7 +173,7 @@ const definition = {
   description: 'Aqara magic cube T1 Pro',
   meta: { battery: { voltageToPercentage: '3V_2850_3000' } },
   ota: ota.zigbeeOTA,
-  fromZigbee: [aqara_opple, action_multistate, fz.MFKZQ01LM_action_analog],
+  fromZigbee: [aqara_opple, action_multistate, analog_action],
   toZigbee: [operation_mode_switch],
   exposes: [
     /* Device Info */
@@ -180,10 +185,10 @@ const definition = {
       .enum('operation_mode', ea.SET, ['scene_mode', 'action_mode'])
       .withDescription(
         '[Soft Switch]: There is a configuration window, opens once an hour, ' +
-          'only during which the cube will respond to mode switch. ' +
-          'Change will be scheduled to be run when the window opens next time. ' +
-          'You can also put down the cube to have it rest for a little bit (e.g. 10s), then pick up and shake it, this wakeup behavior will make the window open sooner sometimes. ' +
-          'Otherwise, you may open the lid and click the LINK button once to make the cube respond immediately. ' +
+        'only during which the cube will respond to mode switch. ' +
+        'Change will be scheduled to be run when the window opens next time. ' +
+        'You can also put down the cube to have it rest for a little bit (e.g. 10s), then pick up and shake it, this wakeup behavior will make the window open sooner sometimes. ' +
+        'Otherwise, you may open the lid and click the LINK button once to make the cube respond immediately. ' +
         '[Hard Switch]: Open lid and click LINK button 5 times to toggle between action_mode and scene_mode'
       ),
     /* Actions */
