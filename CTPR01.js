@@ -53,21 +53,20 @@ const manufacturerOptions = {
   },
 };
 
-const ops_mode_key = 0x0148;
-
-const ops_mode_lookup = { 0: 'action_mode', 1: 'scene_mode' };
-const ops_mode_reverse_lookup = {action_mode: 0, scene_mode: 1};
+const op_mode_attr = 0x0148;
+const op_mode_lookup = { 0: 'action_mode', 1: 'scene_mode' };
+const op_mode_reverse_lookup = { action_mode: 0, scene_mode: 1 };
 
 const aqara_opple = {
   cluster: 'aqaraOpple',
   type: ['attributeReport', 'readResponse'],
   options: (definition) => [
     ...xiaomi.numericAttributes2Options(definition),
-    exposes.enum('operation_mode', ea.ALL, ['scene_mode', 'action_mode']),
+    exposes.enum('operation_mode', ea.SET, ['scene_mode', 'action_mode']),
   ],
-  convert: (model, msg, publish, options, meta) => {
+  convert: async (model, msg, publish, options, meta) => {
     console.debug('>>> fq.aqaraOpple >> convert()');
-    const state = xiaomi.numericAttributes2Payload(
+    const payload = xiaomi.numericAttributes2Payload(
       msg,
       meta,
       model,
@@ -75,42 +74,34 @@ const aqara_opple = {
       msg.data
     );
 
-    // basic data reading (including operation_mode -- 155)
+    // basic data reading (contains operation_mode at attribute 155)
     if (msg.data.hasOwnProperty(247)) {
-      const dataObject247 = xiaomi.buffer2DataObject(
-        meta,
-        model,
-        msg.data[247]
-      );
-      state.operation_mode = ops_mode_lookup[dataObject247[155]];
-      console.debug('>>> \t data247', dataObject247);
-      console.debug('>>> \t operation_mode is', state.operation_mode);
-      // Time to run scheduled tasks
-
-      // debug
-      state.data247 = new Date().toTimeString();
-      console.log('>>>> state', state);
-
+      // execute soft switch of operation_mode
+      if (meta.state.mode_switching_scheduler) {
+        const {callback, new_mode} = meta.state.mode_switching_scheduler;
+        await callback();
+        payload.operation_mode = new_mode;
+        payload.mode_switching_scheduler = null;
+      } else {
+        const dataObject247 = xiaomi.buffer2DataObject(
+          meta,
+          model,
+          msg.data[247]
+        );
+        payload.operation_mode = op_mode_lookup[dataObject247[155]];
+      }
     }
-    // hard switch of operation mode
+    // detected hard switch of operation_mode (attribute 0x148)
     else if (msg.data.hasOwnProperty(328)) {
-      console.debug('>>> \t data328');
-      state.operation_mode = ops_mode_lookup[msg.data[328]];
-    } else if (msg.data.hasOwnProperty('mode')) {
-      console.debug('>>> \t data/mode');
-      state.operation_mode = ops_mode_lookup[msg.data['mode']];
+      payload.operation_mode = op_mode_lookup[msg.data[328]];
     }
-    // side_up attribute report
+    // side_up attribute report (attribute 0x149)
     else if (msg.data.hasOwnProperty(329)) {
-      console.debug('>>> \t data329/side_up action');
-      state.action = 'side_up';
-      state.side_up = msg.data[329] + 1;
-    } else {
-      meta.logger.warn('>>> unknown aqaraOpple data');
-      console.warn('>>> unknown aqaraOpple data', msg.data);
+      payload.action = 'side_up';
+      payload.side_up = msg.data[329] + 1;
     }
 
-    return state;
+    return payload;
   },
 };
 
@@ -139,19 +130,34 @@ const action_multistate = {
   },
 };
 
-const operation_mode = {
+const operation_mode_switch = {
   key: ['operation_mode'],
   convertSet: async (entity, key, value, meta) => {
-    await entity.write(
-      'aqaraOpple',
-      { [ops_mode_key]: { value: ops_mode_reverse_lookup[value], type: 0x20 } },
-      manufacturerOptions.xiaomi
-    );
-    console.log('>>> setting ops_mode success');
-    return { state: { operation_mode: value } };
-  },
-  convertGet: async (entity, key, meta) => {
-    await entity.read('aqaraOpple', [ops_mode_key], manufacturerOptions.xiaomi);
+    /**
+     * schedule the callback to run when the configuration window comes
+     */
+    const callback = async () => {
+      await entity.write(
+        'aqaraOpple',
+        {
+          [op_mode_attr]: {
+            value: op_mode_reverse_lookup[value],
+            type: 0x20,
+          },
+        },
+        manufacturerOptions.xiaomi
+      );
+    };
+
+    // store callback in state
+    return {
+      state: {
+        mode_switching_scheduler: {
+          callback,
+          new_mode: value,
+        },
+      },
+    };
   },
 };
 
@@ -162,12 +168,8 @@ const definition = {
   description: 'Aqara magic cube T1 Pro',
   meta: { battery: { voltageToPercentage: '3V_2850_3000' } },
   ota: ota.zigbeeOTA,
-  fromZigbee: [
-    aqara_opple,
-    action_multistate,
-    fz.MFKZQ01LM_action_analog,
-  ],
-  toZigbee: [operation_mode],
+  fromZigbee: [aqara_opple, action_multistate, fz.MFKZQ01LM_action_analog],
+  toZigbee: [operation_mode_switch],
   exposes: [
     /* Device Info */
     e.battery(),
@@ -175,10 +177,14 @@ const definition = {
     e.device_temperature(),
     e.power_outage_count(false),
     exposes
-      .enum('operation_mode', ea.ALL, ['scene_mode', 'action_mode'])
+      .enum('operation_mode', ea.SET, ['scene_mode', 'action_mode'])
       .withDescription(
-        'Soft Switching: There is a configuration window, once in an hour, only during which the cube will respond to mode switching command. Soft switching will schedule the command to run when the window opens next time. You can also hold the device and keep shaking it, which will keep it awake and probably speed-up the process. Otherwise, you can open the lid and click the LINK button once to make it respond immediately.\n' +
-          'Hard Switching: Open lid and click LINK button 5 times to toggle between action_mode and scene_mode'
+        '[Soft Switch]: There is a configuration window, opens once an hour, ' +
+          'only during which the cube will respond to mode switch. ' +
+          'Change will be scheduled to be run when the window opens next time. ' +
+          'You can also put down the cube to have it rest for a little bit (e.g. 10s), then pick up and shake it, this wakeup behavior will make the window open sooner sometimes. ' +
+          'Otherwise, you may open the lid and click the LINK button once to make the cube respond immediately. ' +
+        '[Hard Switch]: Open lid and click LINK button 5 times to toggle between action_mode and scene_mode'
       ),
     /* Actions */
     e.angle('action_angle'),
