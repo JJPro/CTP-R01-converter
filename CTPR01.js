@@ -159,7 +159,7 @@ const operation_mode_switch = {
     };
 
     meta.logger.info("operation_mode switch is scheduled, it might take a long time. \n" +
-      "The cube will respond to it once an hour, but you may pick up and shake it to speed up the process. \n" +
+      "The cube will respond to it once an hour, but you may pick up and shake it hard to speed up the process. \n" +
       "OR you may open lid and click LINK button once to make it respond immediately.")
 
     // store callback
@@ -189,7 +189,7 @@ const definition = {
         'only during which the cube will respond to mode switch. ' +
         'Change will be scheduled to be run when the window opens next time. ' +
         'You can also put down the cube to have it rest for a little bit (e.g. 10s), ' +
-        'then pick up and shake it, ' +
+        'then pick up and shake it hard, ' +
         'this wakeup behavior will make the window open sooner sometimes. ' +
         'Otherwise, you may open lid and click LINK button once to make the cube respond immediately. ' +
         '[Hard Switch]: Open lid and click LINK button 5 times to toggle between action_mode and scene_mode'
@@ -244,7 +244,7 @@ const definition = {
       );
     };
     const requestUserToClick = () => {
-      const sendRequest = () => logger.warn('Click LINK OR shake the device to complete the setup!');
+      const sendRequest = () => logger.warn('Click LINK OR shake the device hard to complete the setup!');
       setTimeout(sendRequest, 1000);
       return new Promise((resolve, reject) => {
         // wait and periodically notify the user to click LINK, 
@@ -266,11 +266,12 @@ const definition = {
         }, 5000);
       });
     }
+    
+    flagRequireClick();
 
     // device join
     if (isNewJoin) {
       await writeToDevice();
-      flagRequireClick();
       try {
         await requestUserToClick();
       } catch (reason) {
@@ -281,7 +282,6 @@ const definition = {
     }
     // device reconfigure
     else {
-      flagRequireClick();
       try {
         await requestUserToClick();
       } catch (reason) {
