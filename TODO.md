@@ -71,15 +71,15 @@ PR:
         - manufacturer specific: true
         - disable default response: true 
         - attributes: 0x00f7[247]
-    - >>> TO - read attributes (0x00)
+    - __TO - read attributes (0x00)__
         - ep: 1
         - cluster: power configuration (0x0001)
         - manufacturer specific: false 
         - disable default response: true 
         - attribute: battery percentage (0x0021)
     - FROM - read resp (0x01)
-        - ... same as above ...
-    - >>> TO - write attributes (0x02)
+        - status record: unsupported attribute
+    - __TO - write attributes (0x02)__
         - ep: 1
         - cluster: 0xfcc0 aqaraOpple
         - manu specific: true 
@@ -112,7 +112,6 @@ PR:
 
 ## READING MATERIALS
 - [x] Understand Zigbee network https://www.zigbee2mqtt.io/advanced/zigbee/01_zigbee_network.html
-- [ ] Initial Config
   - [x] understand binding: 
     - https://devzone.nordicsemi.com/f/nordic-q-a/55365/creating-a-binding-locally-on-a-zigbee-device
     - https://devzone.nordicsemi.com/f/nordic-q-a/54459/problem-with-binding-in-zigbee-devices
