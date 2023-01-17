@@ -72,7 +72,7 @@ const aqara_opple = {
   convert: async (model, msg, publish, options, meta) => {
     const payload = xiaomi.numericAttributes2Payload(msg, meta, model, options, msg.data);
 
-    // basic data reading (contains operation_mode at attribute 155)
+    // basic data reading (contains operation_mode at attribute 0xf7[247].0x9b[155])
     if (msg.data.hasOwnProperty(247)) {
       // execute soft switch of operation_mode
       if (meta.state.mode_switching_scheduler) {
@@ -89,11 +89,11 @@ const aqara_opple = {
         payload.operation_mode = op_mode_lookup[dataObject247[155]];
       }
     }
-    // detected hard switch of operation_mode (attribute 0x148)
+    // detected hard switch of operation_mode (attribute 0x148[328])
     else if (msg.data.hasOwnProperty(328)) {
       payload.operation_mode = op_mode_lookup[msg.data[328]];
     }
-    // side_up attribute report (attribute 0x149)
+    // side_up attribute report (attribute 0x149[329])
     else if (msg.data.hasOwnProperty(329)) {
       payload.action = 'side_up';
       payload.side_up = msg.data[329] + 1;
