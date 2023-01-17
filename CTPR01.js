@@ -152,7 +152,12 @@ const operation_mode_switch = {
         },
         manufacturerOptions.xiaomi
       );
+      meta.logger.info("operation_mode switch success!");
     };
+
+    meta.logger.info("operation_mode switch is scheduled, it might take a long time. \n" + 
+    "The cube will respond to it once an hour, but you may pick up and shake it to speed up the process. \n" + 
+    "OR you may open the lid and click the LINK button once to make it respond immediately.")
 
     // store callback in state
     return {
