@@ -41,6 +41,7 @@ const xiaomi = require('zigbee-herdsman-converters/lib/xiaomi');
 const herdsman = require('zigbee-herdsman');
 const globalStore = require('zigbee-herdsman-converters/lib/store');
 const ota = require('zigbee-herdsman-converters/lib/ota');
+const { sleep } = require('zigbee-herdsman-converters/lib/utils');
 
 const e = exposes.presets;
 const ea = exposes.access;
@@ -74,7 +75,7 @@ const aqara_opple = {
 
     // basic data reading (contains operation_mode at attribute 0xf7[247].0x9b[155])
     if (msg.data.hasOwnProperty(247)) {
-      // execute soft switch of operation_mode
+      // execute pending soft switch of operation_mode, if exists
       if (meta.state.mode_switching_scheduler) {
         const { callback, new_mode } = meta.state.mode_switching_scheduler;
         await callback();
@@ -87,6 +88,10 @@ const aqara_opple = {
           msg.data[247]
         );
         payload.operation_mode = op_mode_lookup[dataObject247[155]];
+      }
+      // clear requireClick flag to indicate a successful configure (used by device join and reconfigure).
+      if (globalStore.getValue(meta.device, 'requireClick')) {
+        globalStore.putValue(meta.device, 'requireClick', false);
       }
     }
     // detected hard switch of operation_mode (attribute 0x148[328])
@@ -189,7 +194,7 @@ const definition = {
         '[Soft Switch]: There is a configuration window, opens once an hour, ' +
         'only during which the cube will respond to mode switch. ' +
         'Change will be scheduled to be run when the window opens next time. ' +
-        'You can also put down the cube to have it rest for a little bit (e.g. 10s), ' + 
+        'You can also put down the cube to have it rest for a little bit (e.g. 10s), ' +
         'then pick up and shake it, ' +
         'this wakeup behavior will make the window open sooner sometimes. ' +
         'Otherwise, you may open lid and click LINK button once to make the cube respond immediately. ' +
@@ -216,13 +221,87 @@ const definition = {
       'rotate_right',
     ]),
   ],
+  /**
+   * 1. write to necessary cluster/attributes 
+   * 2. request the user to click LINK button or shake the device
+   *      - during device join: 
+   *            the click will trigger the device to report device metadata
+   *              (e.g. battery, voltage, temperature, outage count ...)
+   *            then we can populate the exposes tab with data
+   *      - during device reconfigure: 
+   *            a click makes the device respond to write command in step 1. 
+   *            write will timeout otherwise. 
+   */
   configure: async (device, coordinatorEndpoint, logger) => {
+    const isNewJoin = !device.meta.hasOwnProperty('configured');
     const endpoint = device.getEndpoint(1);
-    await endpoint.write(
-      'aqaraOpple',
-      { mode: 1 },
-      { manufacturerCode: 0x115f }
-    );
+    const flagRequireClick = () => globalStore.putValue(device, 'requireClick', true);;
+    const writeToDevice = async () => {
+      await endpoint.write('aqaraOpple', { mode: 1 }, manufacturerOptions.xiaomi); // attr: 0x09
+      await endpoint.write('aqaraOpple',
+        {
+          0x00ff: {
+            value: [0x45, 0x65, 0x21, 0x20, 0x75, 0x38, 0x17, 0x69, 0x78,
+              0x53, 0x89, 0x51, 0x13, 0x16, 0x49, 0x58],
+            type: 0x41
+          }
+        }
+        , manufacturerOptions.xiaomi
+      );
+    };
+    const requestUserToClick = () => {
+      const sendRequest = () => logger.warn('Click LINK OR shake the device to complete the setup!');
+      setTimeout(sendRequest, 1000);
+      return new Promise((resolve, reject) => {
+        // wait and periodically notify the user to click LINK, 
+        //       reject if no click is detected when the wait is over.
+        let count = 7;
+        const interval = setInterval(async () => {
+          if (!globalStore.getValue(device, 'requireClick')) {
+            clearInterval(interval);
+            logger.info('GREAT JOB! YOU MADE IT!')
+            await sleep(4200);
+            return resolve(null);
+          }
+
+          if (--count < 0) {
+            return reject("User interaction timed out, open lid and click LINK if shaking didn't work.");
+          }
+
+          sendRequest();
+        }, 5000);
+      });
+    }
+
+    // device join
+    if (isNewJoin) {
+      await writeToDevice();
+      flagRequireClick();
+      try {
+        await requestUserToClick();
+      } catch (reason) {
+        logger.warn(reason);
+        await sleep(5000);
+        throw (new Error(reason));
+      }
+    }
+    // device reconfigure
+    else {
+      flagRequireClick();
+      try {
+        await requestUserToClick();
+      } catch (reason) {
+        logger.warn(reason);
+        await sleep(5000);
+        throw (new Error(reason));
+      }
+      try {
+        await writeToDevice();
+      } catch (err) {
+        // very rarely write will timeout, 
+        // but device works as expected
+      }
+    }
   },
 };
 
