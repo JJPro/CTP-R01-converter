@@ -76,11 +76,12 @@ const aqara_opple = {
     // basic data reading (contains operation_mode at attribute 0xf7[247].0x9b[155])
     if (msg.data.hasOwnProperty(247)) {
       // execute pending soft switch of operation_mode, if exists
-      if (meta.state.opModeChangeScheduler) {
-        const { callback, newMode } = meta.state.opModeChangeScheduler;
+      const opModeSwitchTask = globalStore.getValue(meta.device, 'opModeSwitchTask');
+      if (opModeSwitchTask) {
+        const { callback, newMode } = opModeSwitchTask;
         await callback();
         payload.operation_mode = newMode;
-        payload.opModeChangeScheduler = null;
+        globalStore.putValue(meta.device, 'opModeSwitchTask', null);
       } else {
         const dataObject247 = xiaomi.buffer2DataObject(
           meta,
@@ -161,15 +162,8 @@ const operation_mode_switch = {
       "The cube will respond to it once an hour, but you may pick up and shake it to speed up the process. \n" +
       "OR you may open lid and click LINK button once to make it respond immediately.")
 
-    // store callback in state
-    return {
-      state: {
-        opModeChangeScheduler: {
-          callback,
-          newMode: value,
-        },
-      },
-    };
+    // store callback
+    globalStore.putValue(meta.device, 'opModeSwitchTask', { callback, newMode: value });
   },
 };
 
