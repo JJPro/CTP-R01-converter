@@ -259,7 +259,7 @@ const definition = {
           }
 
           if (--count < 0) {
-            return reject("User interaction timed out, open lid and click LINK if shaking didn't work.");
+            return reject(new Error('User interaction timed out, open lid and click LINK if shaking didn\'t work.'));
           }
 
           sendRequest();
@@ -274,20 +274,20 @@ const definition = {
       await writeToDevice();
       try {
         await requestUserToClick();
-      } catch (reason) {
-        logger.warn(reason);
+      } catch (error) {
+        logger.warn(error);
         await sleep(5000);
-        throw (new Error(reason));
+        throw new Error(error);
       }
     }
     // device reconfigure
     else {
       try {
         await requestUserToClick();
-      } catch (reason) {
-        logger.warn(reason);
+      } catch (error) {
+        logger.warn(error);
         await sleep(5000);
-        throw (new Error(reason));
+        throw new Error(error);
       }
       try {
         await writeToDevice();
