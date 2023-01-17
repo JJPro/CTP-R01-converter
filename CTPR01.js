@@ -112,7 +112,7 @@ const action_multistate = {
     let payload;
     if (meta.state.operation_mode === 'action_mode') {
       payload = fz.MFKZQ01LM_action_multistate.convert(model, msg, publish, options, meta);
-      payload.side && payload.side++;
+      if (payload?.side != null) payload.side++;
     } else {
       const value = msg.data['presentValue'];
       if (value === 0) payload = { action: 'shake' };
