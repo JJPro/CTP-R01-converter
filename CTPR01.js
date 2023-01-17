@@ -1,6 +1,4 @@
 /**
-  # MAC ADDR: 54ef4410006a4157
-
   # Two Modes
  
   ## Scene Mode
@@ -8,7 +6,7 @@
    - shake
    - hold
    - side up
-   - trigger after one-min inactivity
+   - one min inactivity
  
   ## Action Mode
    - slide
@@ -16,7 +14,7 @@
    - tap twice
    - flip90, flip180
    - shake
-   - trigger after one-min inactivity
+   - one min inactivity
 
   # Clusters (Scene Mode): 
 
@@ -157,7 +155,7 @@ const operation_mode_switch = {
 
     meta.logger.info("operation_mode switch is scheduled, it might take a long time. \n" + 
     "The cube will respond to it once an hour, but you may pick up and shake it to speed up the process. \n" + 
-    "OR you may open the lid and click the LINK button once to make it respond immediately.")
+    "OR you may open lid and click LINK button once to make it respond immediately.")
 
     // store callback in state
     return {
@@ -193,7 +191,7 @@ const definition = {
         'only during which the cube will respond to mode switch. ' +
         'Change will be scheduled to be run when the window opens next time. ' +
         'You can also put down the cube to have it rest for a little bit (e.g. 10s), then pick up and shake it, this wakeup behavior will make the window open sooner sometimes. ' +
-        'Otherwise, you may open the lid and click the LINK button once to make the cube respond immediately. ' +
+        'Otherwise, you may open lid and click LINK button once to make the cube respond immediately. ' +
         '[Hard Switch]: Open lid and click LINK button 5 times to toggle between action_mode and scene_mode'
       ),
     /* Actions */
