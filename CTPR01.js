@@ -175,7 +175,7 @@ const definition = {
   description: 'Aqara magic cube T1 Pro',
   meta: { battery: { voltageToPercentage: '3V_2850_3000' } },
   ota: ota.zigbeeOTA,
-  fromZigbee: [aqara_opple, action_multistate, action_analog],
+  fromZigbee: [aqara_opple, action_multistate, action_analog, fz.ignore_onoff_report],
   toZigbee: [operation_mode_switch],
   exposes: [
     /* Device Info */
