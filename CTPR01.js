@@ -231,7 +231,7 @@ const definition = {
     const endpoint = device.getEndpoint(1);
     const flagRequireClick = () => globalStore.putValue(device, 'requireClick', true);;
     const writeToDevice = async () => {
-      await endpoint.write('aqaraOpple', { mode: 1 }, manufacturerOptions.xiaomi); // attr: 0x09
+      await endpoint.write('aqaraOpple', { mode: 1 }, manufacturerOptions.xiaomi); // attr: 0x0009
       await endpoint.write('aqaraOpple',
         {
           0x00ff: {
@@ -296,6 +296,9 @@ const definition = {
         // but device works as expected
       }
     }
+
+    device.softwareBuildID = `0.0.0_00${device.applicationVersion}`;
+    device.save();
   },
 };
 
