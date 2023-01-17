@@ -53,9 +53,9 @@ const manufacturerOptions = {
   },
 };
 
-const op_mode_attr = 0x0148;
-const op_mode_lookup = { 0: 'action_mode', 1: 'scene_mode' };
-const op_mode_reverse_lookup = { action_mode: 0, scene_mode: 1 };
+const OP_MODE_ATTR = 0x0148;
+const opModeLookup = { 0: 'action_mode', 1: 'scene_mode' };
+const opModeReverseLookup = { action_mode: 0, scene_mode: 1 };
 
 const one_min_inactivity_handler = (meta, publish) => {
   clearTimeout(globalStore.getValue(meta.device, 'inactivityTimer'));
@@ -76,18 +76,18 @@ const aqara_opple = {
     // basic data reading (contains operation_mode at attribute 0xf7[247].0x9b[155])
     if (msg.data.hasOwnProperty(247)) {
       // execute pending soft switch of operation_mode, if exists
-      if (meta.state.mode_switching_scheduler) {
-        const { callback, new_mode } = meta.state.mode_switching_scheduler;
+      if (meta.state.opModeChangeScheduler) {
+        const { callback, newMode } = meta.state.opModeChangeScheduler;
         await callback();
-        payload.operation_mode = new_mode;
-        payload.mode_switching_scheduler = null;
+        payload.operation_mode = newMode;
+        payload.opModeChangeScheduler = null;
       } else {
         const dataObject247 = xiaomi.buffer2DataObject(
           meta,
           model,
           msg.data[247]
         );
-        payload.operation_mode = op_mode_lookup[dataObject247[155]];
+        payload.operation_mode = opModeLookup[dataObject247[155]];
       }
       // clear requireClick flag to indicate a successful configure (used by device join and reconfigure).
       if (globalStore.getValue(meta.device, 'requireClick')) {
@@ -96,7 +96,7 @@ const aqara_opple = {
     }
     // detected hard switch of operation_mode (attribute 0x148[328])
     else if (msg.data.hasOwnProperty(328)) {
-      payload.operation_mode = op_mode_lookup[msg.data[328]];
+      payload.operation_mode = opModeLookup[msg.data[328]];
     }
     // side_up attribute report (attribute 0x149[329])
     else if (msg.data.hasOwnProperty(329)) {
@@ -147,8 +147,8 @@ const operation_mode_switch = {
       await entity.write(
         'aqaraOpple',
         {
-          [op_mode_attr]: {
-            value: op_mode_reverse_lookup[value],
+          [OP_MODE_ATTR]: {
+            value: opModeReverseLookup[value],
             type: 0x20,
           },
         },
@@ -164,9 +164,9 @@ const operation_mode_switch = {
     // store callback in state
     return {
       state: {
-        mode_switching_scheduler: {
+        opModeChangeScheduler: {
           callback,
-          new_mode: value,
+          newMode: value,
         },
       },
     };
