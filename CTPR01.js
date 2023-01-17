@@ -109,23 +109,22 @@ const action_multistate = {
   ...fz.MFKZQ01LM_action_multistate,
   convert: (model, msg, publish, options, meta) => {
     one_min_inactivity_handler(meta, publish);
+    let payload;
     if (meta.state.operation_mode === 'action_mode') {
-      return fz.MFKZQ01LM_action_multistate.convert(model, msg, publish, options, meta);
+      payload = fz.MFKZQ01LM_action_multistate.convert(model, msg, publish, options, meta);
+      payload.side && payload.side++;
     } else {
       const value = msg.data['presentValue'];
-      let scene_action_multistate;
-      if (value === 0) scene_action_multistate = { action: 'shake' };
-      else if (value === 2) scene_action_multistate = { action: 'wakeup' };
-      else if (value === 4) scene_action_multistate = { action: 'hold' };
-      else if (value >= 1024)
-        scene_action_multistate = { action: 'side_up', side_up: value - 1023 };
-
-      return scene_action_multistate;
+      if (value === 0) payload = { action: 'shake' };
+      else if (value === 2) payload = { action: 'wakeup' };
+      else if (value === 4) payload = { action: 'hold' };
+      else if (value >= 1024) payload = { action: 'side_up', side_up: value - 1023 };
     }
+    return payload;
   },
 };
 
-const analog_action = {
+const action_analog = {
   ...fz.MFKZQ01LM_action_analog,
   convert: (model, msg, publish, options, meta) => {
     one_min_inactivity_handler(meta, publish);
@@ -153,9 +152,9 @@ const operation_mode_switch = {
       meta.logger.info("operation_mode switch success!");
     };
 
-    meta.logger.info("operation_mode switch is scheduled, it might take a long time. \n" + 
-    "The cube will respond to it once an hour, but you may pick up and shake it to speed up the process. \n" + 
-    "OR you may open lid and click LINK button once to make it respond immediately.")
+    meta.logger.info("operation_mode switch is scheduled, it might take a long time. \n" +
+      "The cube will respond to it once an hour, but you may pick up and shake it to speed up the process. \n" +
+      "OR you may open lid and click LINK button once to make it respond immediately.")
 
     // store callback in state
     return {
@@ -176,7 +175,7 @@ const definition = {
   description: 'Aqara magic cube T1 Pro',
   meta: { battery: { voltageToPercentage: '3V_2850_3000' } },
   ota: ota.zigbeeOTA,
-  fromZigbee: [aqara_opple, action_multistate, analog_action],
+  fromZigbee: [aqara_opple, action_multistate, action_analog],
   toZigbee: [operation_mode_switch],
   exposes: [
     /* Device Info */
