@@ -189,7 +189,9 @@ const definition = {
         '[Soft Switch]: There is a configuration window, opens once an hour, ' +
         'only during which the cube will respond to mode switch. ' +
         'Change will be scheduled to be run when the window opens next time. ' +
-        'You can also put down the cube to have it rest for a little bit (e.g. 10s), then pick up and shake it, this wakeup behavior will make the window open sooner sometimes. ' +
+        'You can also put down the cube to have it rest for a little bit (e.g. 10s), ' + 
+        'then pick up and shake it, ' +
+        'this wakeup behavior will make the window open sooner sometimes. ' +
         'Otherwise, you may open lid and click LINK button once to make the cube respond immediately. ' +
         '[Hard Switch]: Open lid and click LINK button 5 times to toggle between action_mode and scene_mode'
       ),
