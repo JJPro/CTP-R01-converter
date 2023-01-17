@@ -217,6 +217,14 @@ const definition = {
       'rotate_right',
     ]),
   ],
+  configure: async (device, coordinatorEndpoint, logger) => {
+    const endpoint = device.getEndpoint(1);
+    await endpoint.write(
+      'aqaraOpple',
+      { mode: 1 },
+      { manufacturerCode: 0x115f }
+    );
+  },
 };
 
 module.exports = definition;
