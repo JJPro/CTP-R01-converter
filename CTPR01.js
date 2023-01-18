@@ -64,12 +64,7 @@ const one_min_inactivity_handler = (meta, publish) => {
 }
 
 const aqara_opple = {
-  cluster: 'aqaraOpple',
-  type: ['attributeReport', 'readResponse'],
-  options: (definition) => [
-    ...xiaomi.numericAttributes2Options(definition),
-    exposes.enum('operation_mode', ea.SET, ['scene_mode', 'action_mode']),
-  ],
+  ...fz.aqara_opple,
   convert: async (model, msg, publish, options, meta) => {
     const payload = xiaomi.numericAttributes2Payload(msg, meta, model, options, msg.data);
 
@@ -159,8 +154,8 @@ const operation_mode_switch = {
     };
 
     meta.logger.info("operation_mode switch is scheduled, it might take a long time. \n" +
-      "The cube will respond to it once an hour, but you may pick up and shake it hard to speed up the process. \n" +
-      "OR you may open lid and click LINK button once to make it respond immediately.")
+      "The cube responds to it once an hour, but you may shake it hard to speed up the process. \n" +
+      "OR open lid and click LINK to make it respond immediately.")
 
     // store callback
     globalStore.putValue(meta.device, 'opModeSwitchTask', { callback, newMode: value });
@@ -185,13 +180,12 @@ const definition = {
     exposes
       .enum('operation_mode', ea.SET, ['scene_mode', 'action_mode'])
       .withDescription(
-        '[Soft Switch]: There is a configuration window, opens once an hour, ' +
+        '[Soft Switch]: There is a configuration window, opens once an hour on itself, ' +
         'only during which the cube will respond to mode switch. ' +
-        'Change will be scheduled to be run when the window opens next time. ' +
-        'You can also put down the cube to have it rest for a little bit (e.g. 10s), ' +
-        'then pick up and shake it hard, ' +
-        'this wakeup behavior will make the window open sooner sometimes. ' +
-        'Otherwise, you may open lid and click LINK button once to make the cube respond immediately. ' +
+        'Mode switch will be scheduled to take effect when the window becomes available. ' +
+        'You can also shake the cube really really HARD! ' +
+        'This will force the device to respond if you do it right. ' +
+        'Otherwise, you may open lid and click LINK to make the cube respond immediately. ' +
         '[Hard Switch]: Open lid and click LINK button 5 times to toggle between action_mode and scene_mode'
       ),
     /* Actions */
