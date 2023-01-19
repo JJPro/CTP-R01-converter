@@ -2,4 +2,8 @@
 !CTPR01.js
 !packge.json
 !TODO.md
+!assets/
+!sniffs/
+!assets/*
+!sniffs/*
 !.gitignore
