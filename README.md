@@ -50,11 +50,11 @@ If this converter doesn't work, either submit an issue in this repo or discuss [
 
 - reconfigure 
 
-  ![reconfigure demo](assets/demo__reconfigure.gif)
+  ![reconfigure demo](assets/demo__reconfigure-1.gif)
   
 - switch mode
 
-  ![switch mode](assets/demo__switch_mode.gif)
+  ![switch mode](assets/demo__switch_mode-1.gif)
 
 - 1 minute inactivity event 
 
