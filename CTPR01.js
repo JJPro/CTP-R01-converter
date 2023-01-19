@@ -119,7 +119,7 @@ const action_multistate = {
       if (value === 0) payload = { action: 'shake' };
       else if (value === 2) payload = { action: 'wakeup' };
       else if (value === 4) payload = { action: 'hold' };
-      else if (value >= 1024) payload = { action: 'side_up', side_up: value - 1023 };
+      else if (value >= 1024) payload = { action: 'flip_to_side', side: value - 1023 };
     }
     return payload;
   },
