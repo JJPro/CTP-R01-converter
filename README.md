@@ -21,14 +21,14 @@ PRs:
   - shake
   - hold
   - side up 
-  - one min inactivity (new)
+  - one min inactivity
 - Action mode actions: 
   - slide
   - rotate
   - shake
   - tap
   - flip90, flip180
-  - one min inactivity (new)
+  - one min inactivity
 
 ## How to Use 
 
@@ -55,11 +55,6 @@ If this converter doesn't work, either submit an issue in this repo or discuss [
 - switch mode
 
   ![switch mode](assets/demo__switch_mode-1.gif)
-
-- 1 minute inactivity event 
-
-  ![inactivity event](assets/demo__inactivity.png)
-
 
 
 ## Potential Concerns
