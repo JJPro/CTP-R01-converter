@@ -153,9 +153,7 @@ const operation_mode_switch = {
       meta.logger.info("operation_mode switch success!");
     };
 
-    meta.logger.info("operation_mode switch is scheduled, it might take a long time. \n" +
-      "The cube responds to it once an hour, but you may shake it hard to speed up the process. \n" +
-      "OR open lid and click LINK to make it respond immediately.")
+    meta.logger.info("Now give your cube ONE (ONLY ONE) HARD shake!");
 
     // store callback
     globalStore.putValue(meta.device, 'opModeSwitchTask', { callback, newMode: value });
@@ -183,10 +181,10 @@ const definition = {
         '[Soft Switch]: There is a configuration window, opens once an hour on itself, ' +
         'only during which the cube will respond to mode switch. ' +
         'Mode switch will be scheduled to take effect when the window becomes available. ' +
-        'You can also shake the cube really really HARD! ' +
-        'This will force the device to respond if you do it right. ' +
-        'Otherwise, you may open lid and click LINK to make the cube respond immediately. ' +
-        '[Hard Switch]: Open lid and click LINK button 5 times to toggle between action_mode and scene_mode'
+        'You can also give it ONE (ONLY ONE) HARD shake to force a respond! ' +
+        'Only one shake is required, more than one will trigger the `shake` action instead of mode switch. ' +
+        'Otherwise, you may open lid and click LINK once to make the cube respond immediately. ' +
+        '[Hard Switch]: Open lid and click LINK button 5 times.'
       ),
     /* Actions */
     e.angle('action_angle'),
@@ -238,7 +236,7 @@ const definition = {
       );
     };
     const requestUserToClick = () => {
-      const sendRequest = () => logger.warn('Click LINK OR shake the device hard to complete the setup!');
+      const sendRequest = () => logger.warn('Click LINK OR give your device ONE (ONLY ONE) HARD shake to complete the setup!');
       setTimeout(sendRequest, 1000);
       return new Promise((resolve, reject) => {
         // wait and periodically notify the user to click LINK, 
