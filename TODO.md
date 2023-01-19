@@ -1,6 +1,5 @@
 # TODO: 
 
-
 - ✅Mode Switching 
     - ✅save the changing command until receives opple.xf7 report. 
         - use node-red to send notifications when event is received. 
@@ -14,6 +13,7 @@
     2. ~~handle genPowerConf.0x0021~~
 - ✅OTA
     - ~~handle/expose genBasic.application_version~~
+- ✅1 min inactivity = wake up 
 
 Converter Repo: 
 - ✅change var mode_switching.... to opModeChange

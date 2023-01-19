@@ -6,7 +6,7 @@
    - shake
    - hold
    - side up
-   - one min inactivity
+   - one min inactivity (triggered after one-min inactivity)
  
   ## Action Mode
    - slide
@@ -14,7 +14,7 @@
    - tap twice
    - flip90, flip180
    - shake
-   - one min inactivity
+   - one min inactivity (triggered after one-min inactivity)
 
   # Clusters (Scene Mode): 
 
@@ -57,11 +57,6 @@ const OP_MODE_ATTR = 0x0148;
 const opModeLookup = { 0: 'action_mode', 1: 'scene_mode' };
 const opModeReverseLookup = { action_mode: 0, scene_mode: 1 };
 
-const one_min_inactivity_handler = (meta, publish) => {
-  clearTimeout(globalStore.getValue(meta.device, 'inactivityTimer'));
-  const inactivityTimer = setTimeout(() => publish({ action: '1_min_inactivity' }), 1000 * 60);
-  globalStore.putValue(meta.device, 'inactivityTimer', inactivityTimer);
-}
 
 const aqara_opple = {
   ...fz.aqara_opple,
@@ -98,8 +93,6 @@ const aqara_opple = {
     else if (msg.data.hasOwnProperty(329)) {
       payload.action = 'side_up';
       payload.side_up = msg.data[329] + 1;
-
-      one_min_inactivity_handler(meta, publish);
     }
 
     return payload;
@@ -109,7 +102,6 @@ const aqara_opple = {
 const action_multistate = {
   ...fz.MFKZQ01LM_action_multistate,
   convert: (model, msg, publish, options, meta) => {
-    one_min_inactivity_handler(meta, publish);
     let payload;
     if (meta.state.operation_mode === 'action_mode') {
       payload = fz.MFKZQ01LM_action_multistate.convert(model, msg, publish, options, meta);
@@ -119,10 +111,11 @@ const action_multistate = {
       if (payload?.from_side != null) payload.from_side++;
       if (payload?.action_to_side != null) payload.action_to_side++;
       if (payload?.to_side != null) payload.to_side++;
+      if (payload?.action == 'wakeup') payload.action = '1_min_inactivity';
     } else {
       const value = msg.data['presentValue'];
       if (value === 0) payload = { action: 'shake' };
-      else if (value === 2) payload = { action: 'wakeup' };
+      else if (value === 2) payload = { action: '1_min_inactivity' };
       else if (value === 4) payload = { action: 'hold' };
       else if (value >= 1024) payload = { action: 'flip_to_side', side: value - 1023 };
     }
@@ -133,7 +126,6 @@ const action_multistate = {
 const action_analog = {
   ...fz.MFKZQ01LM_action_analog,
   convert: (model, msg, publish, options, meta) => {
-    one_min_inactivity_handler(meta, publish);
     return fz.MFKZQ01LM_action_analog.convert(model, msg, publish, options, meta);
   }
 }
