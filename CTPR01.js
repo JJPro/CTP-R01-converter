@@ -192,7 +192,6 @@ const definition = {
     e.cube_side('side_up').withDescription('Upfacing side of current scene'),
     e.action([
       'shake',
-      'wakeup',
       'fall',
       'tap',
       'slide',
@@ -202,6 +201,8 @@ const definition = {
       'side_up',
       'rotate_left',
       'rotate_right',
+      '1_min_inactivity',
+      'flip_to_side',
     ]),
   ],
   /**
