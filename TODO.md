@@ -8,17 +8,32 @@
         - try ea.SET enum options
     - ✅notification to frontend 
 - ✅Inactivity after one minute (schedule task to run after one minute timeout, with debounce)
-- configure 
-    1. configure 
+- ✅configure 
+    1. ✅configure 
         - write aqaraOpple.0x00ff, 这是啥?
-    2. ❌handle genPowerConf.0x0021
+    2. ~~handle genPowerConf.0x0021~~
 - ✅OTA
-    - ❌handle/expose genBasic.application_version
+    - ~~handle/expose genBasic.application_version~~
+
+Converter Repo: 
+- ✅change var mode_switching.... to opModeChange
+- ✅change all vars to camelCase
+- ✅use globalStore for mode switching task 
+- ✅fix device appVersion meta
+- ✅Add demo gifs for 
+    - node-red events one-min inactivity 
+    - pairing process 
+    - mode switcher
+- ✅link PR(s) in readme 
+- ✅share sniff log files in repo
 
 PR: 
-- share setup sniffer file in PR 
-- point out that `endpoint.write('aqaraOpple', {mode: 1}, ..)` is copied from other aqara converters. but I don't know what it does to the cube. 
-- link to your external converter (gist) for temporary use 
+- ✅point out that `endpoint.write('aqaraOpple', {mode: 1}, ..)` is copied from other aqara converters. but I don't know what it does to the cube. 
+- ✅post sniff file in PR 
+
+Continue the consersation in issue page: 
+- ✅link to this repo
+- ✅link both PRs
 
 
 
@@ -26,8 +41,6 @@ PR:
 
 
 # REF
-
-# DEVICE MAC ADDR: 54ef4410006a4157
 
 ## Data Types
 
@@ -38,7 +51,7 @@ PR:
 | unsigned byte integer | 0x20      | 0xff          |
 
 
-
+## Sniff
 
 - operation_mode attrs
   - fz 
@@ -117,11 +130,13 @@ PR:
     - https://devzone.nordicsemi.com/f/nordic-q-a/54459/problem-with-binding-in-zigbee-devices
     - https://infocenter.nordicsemi.com/index.jsp?topic=%2Fsdk_tz_v3.2.0%2Fzigbee_multi_sensor_example.html&anchor=zigbee_multi_sensor_example_test
 - [x] [GET OTA URL](https://www.zigbee2mqtt.io/advanced/more/tuya_xiaomi_ota_url.html)
-- [ ] Follow this [page](https://www.zigbee2mqtt.io/advanced/support-new-devices/01_support_new_devices.html#_3-adding-converter-s-for-your-device) to create PR
+- [x] Follow this [page](https://www.zigbee2mqtt.io/advanced/support-new-devices/01_support_new_devices.html#_3-adding-converter-s-for-your-device) to create PR
 
 
 
-# FP1 Code REF
+## CODE FOR REF
+
+### FP1
 ```js
 {
     zigbeeModel: ['lumi.motion.ac01'],
@@ -154,6 +169,7 @@ PR:
 },
 ```
 
+### ...mode
 ```js 
 /** # TO ZigBee **/
 RTCZCGQ11LM_monitoring_mode: {
@@ -175,4 +191,49 @@ case '324':
         payload.monitoring_mode = {0: 'undirected', 1: 'left_right'}[value];
     }
     break;
+```
+
+### write raw data
+```js
+xiaomi_switch_power_outage_memory: {
+    key: ['power_outage_memory'],
+    convertSet: async (entity, key, value, meta) => {
+        if (['SP-EUC01', 'ZNCZ04LM', 'ZNCZ12LM', 'ZNCZ15LM', 'QBCZ14LM', 'QBCZ15LM', 'SSM-U01', 'SSM-U02', 'DLKZMK11LM', 'DLKZMK12LM',
+            'WS-EUK01', 'WS-EUK02', 'WS-EUK03', 'WS-EUK04', 'QBKG19LM', 'QBKG20LM', 'QBKG25LM', 'QBKG26LM',
+            'QBKG31LM', 'QBKG34LM', 'QBKG38LM', 'QBKG39LM', 'QBKG40LM', 'QBKG41LM', 'ZNDDMK11LM', 'ZNLDP13LM',
+            'WS-USC02', 'WS-USC04',
+        ].includes(meta.mapped.model)) {
+            await entity.write('aqaraOpple', {0x0201: {value: value ? 1 : 0, type: 0x10}}, manufacturerOptions.xiaomi);
+        } else if (['ZNCZ02LM', 'QBCZ11LM', 'LLKZMK11LM'].includes(meta.mapped.model)) {
+            const payload = value ?
+                [[0xaa, 0x80, 0x05, 0xd1, 0x47, 0x07, 0x01, 0x10, 0x01], [0xaa, 0x80, 0x03, 0xd3, 0x07, 0x08, 0x01]] :
+                [[0xaa, 0x80, 0x05, 0xd1, 0x47, 0x09, 0x01, 0x10, 0x00], [0xaa, 0x80, 0x03, 0xd3, 0x07, 0x0a, 0x01]];
+
+            await entity.write('genBasic', {0xFFF0: {value: payload[0], type: 0x41}}, manufacturerOptions.xiaomi);
+            await entity.write('genBasic', {0xFFF0: {value: payload[1], type: 0x41}}, manufacturerOptions.xiaomi);
+        } else if (['ZNCZ11LM'].includes(meta.mapped.model)) {
+            const payload = value ?
+                [0xaa, 0x80, 0x05, 0xd1, 0x47, 0x00, 0x01, 0x10, 0x01] :
+                [0xaa, 0x80, 0x05, 0xd1, 0x47, 0x01, 0x01, 0x10, 0x00];
+
+            await entity.write('genBasic', {0xFFF0: {value: payload, type: 0x41}}, manufacturerOptions.xiaomi);
+        } else {
+            throw new Error('Not supported');
+        }
+        return {state: {power_outage_memory: value}};
+    },
+    convertGet: async (entity, key, meta) => {
+        if (['SP-EUC01', 'ZNCZ04LM', 'ZNCZ12LM', 'ZNCZ15LM', 'QBCZ14LM', 'QBCZ15LM', 'SSM-U01', 'SSM-U02', 'DLKZMK11LM', 'DLKZMK12LM',
+            'WS-EUK01', 'WS-EUK02', 'WS-EUK03', 'WS-EUK04', 'QBKG19LM', 'QBKG20LM', 'QBKG25LM', 'QBKG26LM',
+            'QBKG31LM', 'QBKG34LM', 'QBKG38LM', 'QBKG39LM', 'QBKG40LM', 'QBKG41LM', 'ZNDDMK11LM', 'ZNLDP13LM',
+            'WS-USC02', 'WS-USC04',
+        ].includes(meta.mapped.model)) {
+            await entity.read('aqaraOpple', [0x0201]);
+        } else if (['ZNCZ02LM', 'QBCZ11LM', 'ZNCZ11LM'].includes(meta.mapped.model)) {
+            await entity.read('aqaraOpple', [0xFFF0]);
+        } else {
+            throw new Error('Not supported');
+        }
+    },
+},
 ```
