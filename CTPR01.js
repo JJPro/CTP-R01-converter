@@ -41,7 +41,7 @@ const xiaomi = require('zigbee-herdsman-converters/lib/xiaomi');
 const herdsman = require('zigbee-herdsman');
 const globalStore = require('zigbee-herdsman-converters/lib/store');
 const ota = require('zigbee-herdsman-converters/lib/ota');
-const { sleep } = require('zigbee-herdsman-converters/lib/utils');
+const { sleep, isLegacyEnabled } = require('zigbee-herdsman-converters/lib/utils');
 
 const e = exposes.presets;
 const ea = exposes.access;
@@ -100,25 +100,45 @@ const aqara_opple = {
 };
 
 const action_multistate = {
-  ...fz.MFKZQ01LM_action_multistate,
+  cluster: 'genMultistateInput',
+  type: ['attributeReport', 'readResponse'],
+  options: [exposes.options.legacy()],
   convert: (model, msg, publish, options, meta) => {
+    const value = msg.data['presentValue'];
     let payload;
+
     if (meta.state.operation_mode === 'action_mode') {
-      payload = fz.MFKZQ01LM_action_multistate.convert(model, msg, publish, options, meta);
-      if (payload?.side != null) payload.side++;
-      if (payload?.action_side != null) payload.action_side++;
-      if (payload?.action_from_side != null) payload.action_from_side++;
-      if (payload?.from_side != null) payload.from_side++;
-      if (payload?.action_to_side != null) payload.action_to_side++;
-      if (payload?.to_side != null) payload.to_side++;
-      if (payload?.action == 'wakeup') payload.action = '1_min_inactivity';
-    } else {
-      const value = msg.data['presentValue'];
       if (value === 0) payload = { action: 'shake' };
+      else if (value === 1) payload = { action: 'throw' };
+      else if (value === 2) payload = { action: '1_min_inactivity' };
+      else if (value >= 512) payload = { action: 'tap', side: value - 511 };
+      else if (value >= 256) payload = { action: 'slide', side: value - 255 };
+      else if (value >= 128) payload = { action: 'flip180', side: value - 127 };
+      else if (value >= 64) {
+        payload = {
+          action: 'flip90', action_from_side: Math.floor((value - 64) / 8) + 1, action_to_side: value % 8 + 1,
+          action_side: value % 8 + 1, from_side: Math.floor((value - 64) / 8) + 1, to_side: value % 8 + 1,
+          side: value % 8 + 1,
+        };
+      } else {
+        meta.logger.debug(`${model.zigbeeModel}: unknown action with value ${value}`);
+      }
+
+      if (payload && !isLegacyEnabled(options)) {
+        delete payload.to_side;
+        delete payload.from_side;
+      }
+    } else {
+      if (value === 0) payload = { action: 'shake' };
+      else if (value === 1) payload = { action: 'throw' };
       else if (value === 2) payload = { action: '1_min_inactivity' };
       else if (value === 4) payload = { action: 'hold' };
       else if (value >= 1024) payload = { action: 'flip_to_side', side: value - 1023 };
+      else {
+        meta.logger.debug(`${model.zigbeeModel}: unknown action with value ${value}`);
+      }
     }
+
     return payload;
   },
 };
@@ -150,7 +170,7 @@ const operation_mode_switch = {
       meta.logger.info("operation_mode switch success!");
     };
 
-    meta.logger.info("Now give your cube ONE (ONLY ONE) HARD shake!");
+    meta.logger.info('Now give your cube a forceful throw motion (don\'t drop it)!');
 
     // store callback
     globalStore.putValue(meta.device, 'opModeSwitchTask', { callback, newMode: value });
@@ -174,15 +194,12 @@ const definition = {
     e.power_outage_count(false),
     exposes
       .enum('operation_mode', ea.SET, ['scene_mode', 'action_mode'])
-      .withDescription(
-        '[Soft Switch]: There is a configuration window, opens once an hour on itself, ' +
+      .withDescription('[Soft Switch]: There is a configuration window, opens once an hour on itself, ' +
         'only during which the cube will respond to mode switch. ' +
         'Mode switch will be scheduled to take effect when the window becomes available. ' +
-        'You can also give it ONE (ONLY ONE) HARD shake to force a respond! ' +
-        'Only one shake is required, more than one will trigger the `shake` action instead of mode switch. ' +
+        'You can also give it a throw action (no backward motion) to force a respond! ' +
         'Otherwise, you may open lid and click LINK once to make the cube respond immediately. ' +
-        '[Hard Switch]: Open lid and click LINK button 5 times.'
-      ),
+        '[Hard Switch]: Open lid and click LINK button 5 times.'),
     /* Actions */
     e.angle('action_angle'),
     e.cube_side('action_from_side'),
@@ -191,7 +208,7 @@ const definition = {
     e.cube_side('side').withDescription('Side of the cube'),
     e.action([
       'shake',
-      'fall',
+      'throw',
       'tap',
       'slide',
       'flip180',
@@ -206,7 +223,7 @@ const definition = {
   ],
   /**
    * 1. write to necessary cluster/attributes 
-   * 2. request the user to click LINK button or shake the device
+   * 2. request the user to click LINK button or throw the device
    *      - during device join: 
    *            the click will trigger the device to report device metadata
    *              (e.g. battery, voltage, temperature, outage count ...)
@@ -233,7 +250,8 @@ const definition = {
       );
     };
     const requestToClick = () => {
-      const sendRequest = () => logger.warn('Click LINK OR give your device ONE (ONLY ONE) HARD shake to complete the setup!');
+      const sendRequest = () =>
+        logger.warn('Click LINK OR give your device a forceful throw motion (don\'t drop it) to complete the setup!');
       setTimeout(sendRequest, 1000);
       return new Promise((resolve, reject) => {
         // wait and periodically notify the user to click LINK, 

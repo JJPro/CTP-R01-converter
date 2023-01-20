@@ -19,6 +19,7 @@ PRs:
 - Scene mode actions: 
   - rotate 
   - shake
+  - throw (new action discovered)
   - hold
   - side up 
   - one min inactivity
@@ -26,6 +27,7 @@ PRs:
   - slide
   - rotate
   - shake
+  - throw (new action discovered)
   - tap
   - flip90, flip180
   - one min inactivity
