@@ -6,8 +6,6 @@
 
 A PR based on this converter is WIP, until it is finalized and officially merged, you may use the external converter file in this repo to make your cube fully function. 
 
-I've been testing this converter for a week, no problems for me. [Report](#issue-report) if it doesn't work for you. 
-
 PRs: 
 - Koenkk/zigbee2mqtt.io#1833
 - Koenkk/zigbee-herdsman-converters#5367
@@ -43,6 +41,27 @@ PRs:
 3. Restart Zigbee2MQTT and pairing your device.
 
 If this converter doesn't work, either submit an issue in this repo or discuss [here](https://github.com/Koenkk/zigbee2mqtt/issues/15652).
+
+## My Node-RED flows - inspirations to create your own awesome automations
+
+- *throw* with logo side up, to toggle between modes 
+  ![node-RED mode toggle](assets/nodered__mode_toggle_v2.png)
+- homeoffice: 
+  - *rotate* - adjust monitor lightstrip brightness 
+  - *flip90* - change lightstrip color 
+  - *flip180* - toggle lightstrip on/off 
+  - *shake*
+    - turn on docking station
+    - turn off docking station and all lights in the room
+  - *tap*
+    - *tap* with logo up - toggle my docking station on then off
+    
+      It's for solving a minor compatibility issue of M1 mac with the docking station. Sometimes my macbook can't wake my external monitor up from sleep, which can be solved by cutting the power, then power back on. 
+
+      This automation is really convenient. 
+    - *tap* on other sides - randomly pick a lighting effect to ambient lightstrip behind my monitor
+
+  ![node-RED multistate actions](assets/nodered__multistate_actions.png)
 
 ## Demo 
 
