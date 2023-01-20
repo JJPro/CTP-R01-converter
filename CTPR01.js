@@ -92,7 +92,7 @@ const aqara_opple = {
     // side_up attribute report (attribute 0x149[329])
     else if (msg.data.hasOwnProperty(329)) {
       payload.action = 'side_up';
-      payload.side_up = msg.data[329] + 1;
+      payload.side = msg.data[329] + 1;
     }
 
     return payload;
@@ -188,8 +188,7 @@ const definition = {
     e.cube_side('action_from_side'),
     e.cube_side('action_side'),
     e.cube_side('action_to_side'),
-    e.cube_side('side').withDescription('Destination side of action'),
-    e.cube_side('side_up').withDescription('Upfacing side of current scene'),
+    e.cube_side('side').withDescription('Side of the cube'),
     e.action([
       'shake',
       'fall',
