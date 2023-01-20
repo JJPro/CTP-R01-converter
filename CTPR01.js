@@ -233,7 +233,7 @@ const definition = {
         , manufacturerOptions.xiaomi
       );
     };
-    const requestUserToClick = () => {
+    const requestToClick = () => {
       const sendRequest = () => logger.warn('Click LINK OR give your device ONE (ONLY ONE) HARD shake to complete the setup!');
       setTimeout(sendRequest, 1000);
       return new Promise((resolve, reject) => {
@@ -244,7 +244,7 @@ const definition = {
           if (!globalStore.getValue(device, 'requireClick')) {
             clearInterval(interval);
             logger.info('GREAT JOB! YOU MADE IT!')
-            await sleep(4200);
+            isNewJoin && await sleep(4200);
             return resolve(null);
           }
 
@@ -263,7 +263,7 @@ const definition = {
     if (isNewJoin) {
       await writeToDevice();
       try {
-        await requestUserToClick();
+        await requestToClick();
       } catch (error) {
         logger.warn(error);
         await sleep(5000);
@@ -273,7 +273,7 @@ const definition = {
     // device reconfigure
     else {
       try {
-        await requestUserToClick();
+        await requestToClick();
       } catch (error) {
         logger.warn(error);
         await sleep(5000);
