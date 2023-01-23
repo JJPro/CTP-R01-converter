@@ -6,6 +6,12 @@
 
 A PR based on this converter is WIP, until it is finalized and officially merged, you may use the external converter file in this repo to make your cube fully function. 
 
+Updates will be migrated into the PR only when this external converter proves to be solid by the community. 
+
+Download the converter and report problems. 
+
+Post your positive feedbacks or improvement ideas in Discussions. 
+
 PRs: 
 - Koenkk/zigbee2mqtt.io#1833
 - Koenkk/zigbee-herdsman-converters#5367
