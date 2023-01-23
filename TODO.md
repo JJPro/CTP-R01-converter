@@ -1,5 +1,17 @@
 # TODO: 
 
+- ✅store side_up in side 
+- actions: 
+    - ✅remove fall
+    - ✅add throw (multi - 1)
+    - ✅add action_from_side to flip180, 
+        - ✅HA mqtt验证准确性
+
+- ✅Don't ask user to click while pairing 
+- ✅remove legacy integration code
+- ✅clean up exposes & action payload 
+
+
 - ✅Mode Switching 
     - ✅save the changing command until receives opple.xf7 report. 
         - use node-red to send notifications when event is received. 
@@ -37,6 +49,40 @@ Continue the consersation in issue page:
 
 
 
+# Two Modes
+
+## Scene Mode
+- rotate
+- shake
+- hold
+- side up
+- one min inactivity (triggered after one-min inactivity)
+
+## Action Mode
+- slide
+- rotate
+- tap twice
+- flip90, flip180
+- shake
+- one min inactivity (triggered after one-min inactivity)
+
+# Clusters (Scene Mode): 
+
+## Endpoint 2: 
+
+| Cluster            | Data                      | Description                   |
+| ------------------ | ------------------------- | ----------------------------- |
+| aqaraopple         | {329: 0-5}                | i side facing up              |
+| genMultistateInput | {presentValue: 0}         | action: shake                 |
+| genMultistateInput | {presentValue: 4}         | action: hold                  |
+| genMultistateInput | {presentValue: 2}         | action: wakeup                |
+| genMultistateInput | {presentValue: 1024-1029} | action: fall with ith side up |
+
+## Endpoint 3: 
+
+| Cluster   | Data                                  | Desc                                       |
+| --------- | ------------------------------------- | ------------------------------------------ |
+| genAnalog | {267: 500, 329: 3, presentValue: -51} | 267: NA, 329: side up, presentValue: angle |
 
 
 
@@ -235,5 +281,21 @@ xiaomi_switch_power_outage_memory: {
             throw new Error('Not supported');
         }
     },
+},
+```
+
+魔方
+```js
+{
+    zigbeeModel: ['lumi.sensor_cube', 'lumi.sensor_cube.aqgl01'],
+    model: 'MFKZQ01LM',
+    vendor: 'Xiaomi',
+    description: 'Mi/Aqara smart home cube',
+    meta: {battery: {voltageToPercentage: '3V_2850_3000'}},
+    fromZigbee: [fz.xiaomi_basic, fz.MFKZQ01LM_action_multistate, fz.MFKZQ01LM_action_analog],
+    exposes: [e.battery(), e.battery_voltage(), e.angle('action_angle'), e.device_temperature(), e.power_outage_count(false),
+        e.cube_side('action_from_side'), e.cube_side('action_side'), e.cube_side('action_to_side'), e.cube_side('side'),
+        e.action(['shake', 'wakeup', 'fall', 'tap', 'slide', 'flip180', 'flip90', 'rotate_left', 'rotate_right'])],
+    toZigbee: [],
 },
 ```

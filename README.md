@@ -15,20 +15,32 @@ PRs:
 
 - Operation Mode switch in Zigbee2MQTT
 - Scene mode actions: 
-  - rotate 
-  - shake
-  - throw (new action discovered)
-  - hold
-  - side up 
-  - one min inactivity
+
+  | Action           | additional attributes in payload |
+  | ---------------- | -------------------------------- |
+  | rotate_left      | action_angle                     |
+  | rotate_right     | action_angle                     |
+  | shake            | -                                |
+  | throw            | -                                |
+  | hold             | -                                |
+  | side_up          | side                             |
+  | flip_to_side     | side                             |
+  | 1_min_inactivity | -                                |
+
 - Action mode actions: 
-  - slide
-  - rotate
-  - shake
-  - throw (new action discovered)
-  - tap
-  - flip90, flip180
-  - one min inactivity
+
+  | Action           | additional attributes in payload |
+  | ---------------- | -------------------------------- |
+  | rotate_left      | action_angle                     |
+  | rotate_right     | action_angle                     |
+  | shake            | -                                |
+  | throw            | -                                |
+  | slide            | side                             |
+  | tap              | side                             |
+  | flip90           | side, action_from_side           |
+  | flip180          | side, action_from_side           |
+  | 1_min_inactivity | -                                |
+
 
 ## How to Use 
 
@@ -40,7 +52,15 @@ PRs:
     ```
 3. Restart Zigbee2MQTT and pairing your device.
 
-If this converter doesn't work, either submit an issue in this repo or discuss [here](https://github.com/Koenkk/zigbee2mqtt/issues/15652).
+## How to Upgrade
+
+If you see `#requiresRemoval` in any of the commit messages since your last download/pull, you need to 
+ - remove device from the network 
+ - restart Zigbee2MQTT
+ - restart HomeAssistant
+
+Otherwise, just restart Zigbee2MQTT.
+
 
 ## My Node-RED flows - inspirations to create your own awesome automations
 
@@ -64,14 +84,6 @@ If this converter doesn't work, either submit an issue in this repo or discuss [
   ![node-RED multistate actions](assets/nodered__multistate_actions.png)
 
 ## Demo 
-
-- pairing
-
-  ![pairing demo](assets/demo__pairing.gif)
-
-- reconfigure 
-
-  ![reconfigure demo](assets/demo__reconfigure-1.gif)
   
 - switch mode
 
@@ -117,9 +129,10 @@ I observed this behavior from sniffing the pairing process with Aqara Hub M2.
 
 It wrote a different value for each pairing experiment. I randomly picked one to use. Not sure what it does though. 
 
-## Issue Report 
+## Issue Report & Feedback
 
-Submit an issue under this repo or continue the discussion [here](https://github.com/Koenkk/zigbee2mqtt/issues/15652).
+ - Issue Report: Submit an issue
+ - Provide Feedbacks: The discussion board
 
 
 ## SUPPORT MY WORK
