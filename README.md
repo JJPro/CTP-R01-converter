@@ -8,7 +8,7 @@ A PR based on this converter is WIP, until it is finalized and officially merged
 
 Updates will be migrated into the PR only when this external converter proves to be solid by the community. 
 
-Download the converter and report problems. 
+Download the converter and report problems in Issues. 
 
 Post your positive feedbacks or improvement ideas in Discussions. 
 
