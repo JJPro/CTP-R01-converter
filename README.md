@@ -70,8 +70,13 @@ Otherwise, just restart Zigbee2MQTT.
 
 ## My Node-RED flows - inspirations to create your own awesome automations
 
-- *throw* with logo side up, to toggle between modes 
-  ![node-RED mode toggle](assets/nodered__mode_toggle_v2.png)
+- *throw* is a perfect trigger for toggling between modes. 
+
+  With one *throw*, it initiates the mode switch command, and makes the cube respond to it at the same time. 
+
+  Brilliant! No need to touch z2m frontend for switching modes. 
+
+  ![node-RED mode toggle](assets/nodered__mode_toggle_v4.png)
 - homeoffice: 
   - *rotate* - adjust monitor lightstrip brightness 
   - *flip90* - change lightstrip color 
