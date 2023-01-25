@@ -176,9 +176,12 @@ const definition = {
   configure: async (device, coordinatorEndpoint, logger) => {
     device.softwareBuildID = `0.0.0_00${device.applicationVersion}`;
     device.save();
-    
-    setTimeout(() => logger.info(`${device.ieeeAddr} battery info takes time to load for the first time. ` +
-      'You may give device a throw motion to speed up the process.'), 3000);
+
+    const endpoint = device.getEndpoint(1);
+    await endpoint.read('aqaraOpple', [OP_MODE_ATTR], { ...manufacturerOptions.xiaomi, disableResponse: true });
+
+    setTimeout(() => logger.info('battery info takes time to load, ' +
+      'you may give device a throw motion to speed up the process.'), 3000);
   },
 };
 
