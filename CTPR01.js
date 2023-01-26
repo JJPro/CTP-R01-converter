@@ -176,6 +176,16 @@ const definition = {
 
         const endpoint = device.getEndpoint(1);
         await endpoint.read('aqaraOpple', [OP_MODE_ATTR], {manufacturerCode: 0x115f, disableResponse: true});
+        await endpoint.write('aqaraOpple', {mode: 1}, {...manufacturerOptions.xiaomi, disableResponse: true}); // attr: 0x0009
+        await endpoint.write('aqaraOpple',
+            {
+                0x00ff: {
+                    value: [0x45, 0x65, 0x21, 0x20, 0x75, 0x38, 0x17, 0x69, 0x78,
+                        0x53, 0x89, 0x51, 0x13, 0x16, 0x49, 0x58],
+                    type: 0x41,
+                },
+            }
+            , {...manufacturerOptions.xiaomi, disableResponse: true});
 
         setTimeout(() => logger.info('battery info takes longer to show up, ' +
           'you may give device a "throw" to speed up the process.'), 3000);
