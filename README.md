@@ -2,6 +2,12 @@
 [![Sponsor](https://img.shields.io/badge/Sponsor-ko--fi-ff5e5b)](https://ko-fi.com/jjpro)
 [![Sponsor](https://img.shields.io/badge/Sponsor-patreon-brightgreen)](https://patreon.com/jjpro)
 
+This converter is officially merged into zigbee2mqtt, thus being archived. 
+
+But there are information, e.g. action list, demos & nodeRED flows in the wiki, that people might find interesting, so this repo will continue to exist. 
+
+---
+
 A PR based on this converter is WIP, code will be migrated to the PR when this converter proves solid. 
 
 PRs: 
